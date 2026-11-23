@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SBESC 2026 - Programação Interativa</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ffffff;
+            color: #1e293b;
+        }
+        .tab-active {
+            border-bottom: 3px solid #2563eb;
+            color: #2563eb;
+            font-weight: 600;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 6px;
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        /* SBESC 2026 — visual identity and accessible session color coding */
+        :root { --sbesc-blue: #174b87; --sbesc-border: #e2e8f0; --sbesc-text: #243247; }
+        html, body { background: #fff !important; color: var(--sbesc-text); }
+        header { border-top: 4px solid var(--sbesc-blue); }
+        .tab-active { border-bottom-color: var(--sbesc-blue) !important; color: var(--sbesc-blue) !important; }
+        .tab-btn { transition: color .18s ease, background-color .18s ease; }
+        .tab-btn:hover { color: var(--sbesc-blue); }
+        section.bg-slate-50 { background: #f8fafc !important; }
+        #dayHeader { border-color: #dbe4ef; }
+        #dayTitle { color: #173b63; }
+        .session-row { border-color: #e3eaf2 !important; border-left-width: 4px !important; border-left-color: #cbd8e8 !important; }
+        .session-row:hover { box-shadow: 0 5px 18px rgba(30,64,105,.07); }
+        .session-row.session-keynote { border-left-color: #b8a4df !important; }
+        .session-row.session-school { border-left-color: #83bca0 !important; }
+        .session-row.session-technical { border-left-color: #83addb !important; }
+        .session-row.session-social { border-left-color: #e6c27c !important; }
+        .session-card { background: #fff; border-color: #e3eaf2; }
+        .session-card:hover { transform: translateY(-1px); }
+        .session-card.session-technical { background: #f2f7fd; border-color: #d8e7f7; }
+        .session-card.session-school { background: #f1f8f4; border-color: #d7ebdf; }
+        .session-card.session-social { background: #fff9ee; border-color: #f1e5c9; }
+        .session-card.session-competition { background: #fff4ee; border-color: #f2dfd2; }
+        .session-badge { display: inline-flex; align-items: center; }
+        .badge-keynote { background: #eee8f8 !important; color: #604b88 !important; }
+        .badge-technical { background: #e2eefb !important; color: #285987 !important; }
+        .badge-school { background: #e2f1e8 !important; color: #326b4d !important; }
+        .badge-social { background: #fbf0d9 !important; color: #80612b !important; }
+        .badge-competition { background: #f9e9df !important; color: #925738 !important; }
+        .grid-session-cell { transition: background-color .15s ease; }
+        .grid-session-cell:hover { background: #edf4fc !important; }
+        #gridView { border-color: #dfe7f0; }
+        #gridView thead { background: #f1f5f9 !important; color: #294665 !important; }
+        #modalOverlay > div { border-color: #dfe7f0; }
+        #modalOverlay .bg-slate-50 { background: #f6f8fb !important; }
+        button:focus-visible, input:focus-visible, [onclick]:focus-visible { outline: 3px solid rgba(37,99,235,.35); outline-offset: 2px; }
+        @media (max-width: 640px) { header .h-20 { height: auto; min-height: 4.5rem; } .session-row { padding: 1rem; } }
+    </style>
+</head>
+<body class="bg-white text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- HEADER / HERO -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <!-- LOGO & TITLE -->
+                <div class="flex items-center gap-3 py-2">
+                    <div class="h-10 w-1.5 rounded-full bg-blue-700"></div>
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-widest text-blue-700">SBESC 2026</p>
+                        <p class="text-lg font-bold text-slate-900 leading-tight">Conference Program</p>
+                    </div>
+                </div>
+
+                <!-- QUICK ACTIONS -->
+                <div class="flex items-center space-x-3">
+                    <button id="favToggleBtn" onclick="toggleFavFilter()" class="flex items-center space-x-2 text-sm font-medium px-3.5 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all">
+                        <i data-lucide="star" class="w-4 h-4 text-amber-500"></i>
+                        <span class="hidden sm:inline">My Schedule</span>
+                        <span id="favBadge" class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- DAYS TAB BAR -->
+            <div class="flex border-t border-slate-100 overflow-x-auto custom-scrollbar space-x-8">
+                <button onclick="switchDay(1)" id="tab-day1" class="tab-btn tab-active py-3.5 text-sm whitespace-nowrap flex items-center space-x-2">
+                    <i data-lucide="calendar" class="w-4 h-4"></i>
+                    <span>Day 1 • Nov, 24 (Tue)</span>
+                    <span class="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-600">Industry Day</span>
+                </button>
+                <button onclick="switchDay(2)" id="tab-day2" class="tab-btn text-slate-500 hover:text-slate-800 py-3.5 text-sm whitespace-nowrap flex items-center space-x-2">
+                    <i data-lucide="calendar" class="w-4 h-4"></i>
+                    <span>Day 2 • Nov, 25 (Wed)</span>
+                    <span class="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-600">Embedded Systems School</span>
+                </button>
+                <button onclick="switchDay(3)" id="tab-day3" class="tab-btn text-slate-500 hover:text-slate-800 py-3.5 text-sm whitespace-nowrap flex items-center space-x-2">
+                    <i data-lucide="calendar" class="w-4 h-4"></i>
+                    <span>Day 3 • Nov, 26 (Thu)</span>
+                    <span class="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-600">Satellite Events</span>
+                </button>                
+                <button onclick="switchDay(4)" id="tab-day4" class="tab-btn text-slate-500 hover:text-slate-800 py-3.5 text-sm whitespace-nowrap flex items-center space-x-2">
+                    <i data-lucide="calendar" class="w-4 h-4"></i>
+                    <span>Day 4 • Nov, 27 (Fri)</span>
+                    <span class="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-600">Technical Sessions</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- SEARCH & CONTROLS TOOLBAR -->
+    <section class="bg-slate-50 border-b border-slate-200 py-4">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            
+            <!-- SEARCH INPUT -->
+            <div class="relative flex-1 max-w-lg">
+                <i data-lucide="search" class="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Pesquisar palestra, autor, artigo ou sala..." 
+                    class="w-full pl-10 pr-4 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+            </div>
+
+            <!-- CATEGORY FILTERS & VIEW MODE TOGGLE -->
+            <div class="flex items-center justify-between md:justify-end gap-3 flex-wrap">
+                <!-- CATEGORY PILLS -->
+                <div class="flex items-center space-x-1.5 overflow-x-auto custom-scrollbar py-1">
+                    <button onclick="filterCategory('all')" id="cat-all" class="cat-pill bg-blue-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full transition-all">All</button>
+                    <button onclick="filterCategory('keynote')" id="cat-keynote" class="cat-pill bg-white text-slate-600 border border-slate-200 text-xs font-medium px-3 py-1.5 rounded-full hover:bg-slate-100 transition-all">Keynotes</button>
+                    <button onclick="filterCategory('technical')" id="cat-technical" class="cat-pill bg-white text-slate-600 border border-slate-200 text-xs font-medium px-3 py-1.5 rounded-full hover:bg-slate-100 transition-all">Technical Sessions</button>
+                    <button onclick="filterCategory('competition')" id="cat-competition" class="cat-pill bg-white text-slate-600 border border-slate-200 text-xs font-medium px-3 py-1.5 rounded-full hover:bg-slate-100 transition-all">Embedded Systems Competition</button>
+                    <button onclick="filterCategory('school')" id="cat-school" class="cat-pill bg-white text-slate-600 border border-slate-200 text-xs font-medium px-3 py-1.5 rounded-full hover:bg-slate-100 transition-all">Embedded Systems School</button>
+                    <button onclick="filterCategory('school')" id="cat-school" class="cat-pill bg-white text-slate-600 border border-slate-200 text-xs font-medium px-3 py-1.5 rounded-full hover:bg-slate-100 transition-all">Workshop and Special Session</button>
+                    <button onclick="filterCategory('social')" id="cat-social" class="cat-pill bg-white text-slate-600 border border-slate-200 text-xs font-medium px-3 py-1.5 rounded-full hover:bg-slate-100 transition-all">Social / Breaks</button>
+                </div>
+
+                <!-- VIEW MODE -->
+                <div class="flex items-center bg-white p-1 border border-slate-200 rounded-lg shrink-0">
+                    <button onclick="setViewMode('timeline')" id="btn-view-timeline" class="p-1.5 rounded text-blue-600 bg-blue-50 hover:bg-blue-100 transition-all" title="Timeline vision">
+                        <i data-lucide="list" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="setViewMode('grid')" id="btn-view-grid" class="p-1.5 rounded text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all" title="Room Vision">
+                        <i data-lucide="layout-grid" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- MAIN PROGRAM CONTENT -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- HEADER INFO FOR ACTIVE DAY -->
+        <div id="dayHeader" class="mb-8 pb-4 border-b border-slate-200 flex items-center justify-between flex-wrap gap-4">
+            <div>
+                <h2 id="dayTitle" class="text-2xl font-bold text-slate-900">Day 1: Industry Day</h2>
+                <p id="daySubtitle" class="text-sm text-slate-500 mt-1">Tuesday, November 24, 2026 •  IFBA</p>
+            </div>
+            <div class="flex items-center space-x-2 text-xs text-slate-500 bg-blue-50 border border-blue-100 text-blue-800 px-3 py-2 rounded-lg">
+                <i data-lucide="info" class="w-4 h-4 shrink-0"></i>
+                <span>Click on <strong>Technical Session</strong> to view the complete list of papers and authors.</span>
+            </div>
+        </div>
+
+        <!-- TIMELINE CONTAINER -->
+        <div id="timelineView" class="space-y-6">
+            <!-- Dynamic items rendered via JS -->
+        </div>
+
+        <!-- MATRIX / GRID VIEW CONTAINER -->
+        <div id="gridView" class="hidden overflow-x-auto border border-slate-200 rounded-lg shadow-sm">
+            <!-- Dynamic Grid Table rendered via JS -->
+        </div>
+
+        <!-- EMPTY STATE -->
+        <div id="emptyState" class="hidden py-16 'text'-center">
+            <i data-lucide="search-x" class="w-12 h-12 text-slate-300 mx-auto mb-3"></i>
+            <h3 class="text-base font-semibold text-slate-700">No activity found</h3>
+            <p class="text-sm text-slate-500 max-w-md mx-auto mt-1">No event corresponds to the research parameters. Try to update your search parameters.</p>
+            <button onclick="resetFilters()" class="mt-4 px-4 py-2 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all">Clear filters</button>
+        </div>
+
+    </main>
+
+
+    <!-- MODAL DE DETALHES DA SESSÃO TÉCNICA / KEYNOTE -->
+    <div id="modalOverlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-slate-200 custom-scrollbar flex flex-col">
+            <!-- MODAL HEADER -->
+            <div class="p-6 border-b border-slate-100 flex items-start justify-between bg-slate-50 rounded-t-xl">
+                <div>
+                    <span id="modalTypeBadge" class="text-xs font-bold px-2.5 py-1 rounded bg-blue-100 text-blue-800 uppercase tracking-wider">Technical Session</span>
+                    <h3 id="modalTitle" class="text-xl font-bold text-slate-900 mt-2">Technical Session I - Healthcare Systems</h3>
+                    <p id="modalMeta" class="text-xs text-slate-500 mt-1 flex items-center gap-3">
+                        <span><i data-lucide="clock" class="w-3.5 h-3.5 inline mr-1"></i><span id="modalTime">13:30 - 15:30</span></span>
+                        <span><i data-lucide="map-pin" class="w-3.5 h-3.5 inline mr-1"></i><span id="modalRoom">Espaço Cultural Dois de Julho - Auditorium</span></span>
+                    </p>
+                </div>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200 transition-all">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- MODAL BODY -->
+            <div id="modalBody" class="p-6 space-y-6 flex-1 text-slate-700 text-sm">
+                <!-- Articles list or Keynote abstract inserted dynamically -->
+            </div>
+
+            <!-- MODAL FOOTER -->
+            <div class="p-4 border-t border-slate-100 bg-slate-50 rounded-b-xl flex justify-end">
+                <button onclick="closeModal()" class="px-5 py-2 text-sm font-semibold bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg transition-all">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- APPLICATION DATA & LOGIC -->
+    <script>
+        // DATABASE OF SBESC 2026 PROGRAM
+        const programData = {
+            1: {
+                title: "Day 1: Industry Day",
+                subtitle: "Tuesday • November 24, 2026 • Salvador - BA",
+                schedule: [
+                    {
+                        time: "08:00 - 08:30",
+                        type: "social",
+                        title: "Welcome & Registration",
+                        room: "Main Foyer",
+                        category: "social"
+                    },
+                    {
+                        time: "08:30 - 10:30",
+                        type: "parallel",
+                        tracks: [
+                           {
+                              type: "school",
+                              id: "esse1",
+                              title: "Aceleração de Algoritmos de Machine Learning em FPGAs para Computação de Alto Desempenho: Do Básico ao Avançado",
+                              room: "Espaço Cultural Dois de Julho - Auditorium",
+                              institution: "Federal University of Minas Gerais - UFMG",
+                              speaker: "Dr. Racyus Delano Garcia Pacífico",
+                              category: "school",
+                              bio: "Racyus Delano Garcia Pacífico holds a Ph.D. in Computer Science (2023) from the Federal University of Minas Gerais (UFMG) and an M.Sc. in Computer Science (2016) from the Federal University of Viçosa (UFV). He has been a professor at the Federal University of Ouro Preto (UFOP) since 2025 and currently serves in the Department of Computing (DECOM). His research interests include computer networks, computer architecture, FPGAs, GPUs, embedded systems and IoT, high-performance computing, and hardware accelerators for programmable networks, machine learning, and artificial intelligence. E-mail: racyus.pacifico at ufop.edu.br.",
+                              abstract: "The growing demand for Artificial Intelligence (AI) and Machine Learning (ML) applications in High-Performance Computing (HPC) environments has driven the adoption of hardware accelerators. Among these technologies, Field-Programmable Gate Arrays (FPGAs) stand out for their high processing capabilities and reconfigurability, making them an attractive alternative to CPUs and GPUs for various ML applications. This course provides a practical introduction to the development of ML accelerators on FPGAs using High-Level Synthesis (HLS), enabling FPGA programming through C/C++ code. As a case study, implementations of the K-means algorithm and its variants will be explored, with a focus on optimization techniques for HPC." 
+                           },
+                           {
+                              title:"IES Hubs Poster Session (09h - 11h)",
+                              room:"Networking Area",
+                              category: "technical"
+                           }
+                        ]
+                    },
+                    {
+                        time: "10:30 - 11:00",
+                        type: "social",
+                        title: "Break & Networking",
+                        room: "Networking Area",
+                        category: "social"
+                    },
+                    {
+                        time: "11:00 - 12:10",
+                        type: "keynote",
+                        title: "Rethinking Aircraft Systems Engineering in the Era of Cyber Threats",
+                        speaker: "Ricardo Moraes",
+                        institution: "EMBRAER",
+                        room: "Espaço Cultural Dois de Julho - Auditorium",
+                        category: "keynote",
+                        bio: "Ricardo Moraes dos Santos is an Engineering Supervisor at Embraer with over 15 years of experience in the aerospace industry. He leads Systems Engineering and Product Cybersecurity, with a strong focus on system architecture, Model-Based Systems Engineering (MBSE), and aircraft certification. He has extensive experience in multidisciplinary integration of complex systems and in supporting certification processes with regulatory authorities such as EASA, FAA, and ANAC. He is responsible for driving digital transformation initiatives (MBSE), advancing engineering processes, and strengthening technical governance. A published author (CRC Press) and former INCOSE Brazil President, he combines strong technical leadership with strategic vision and active engagement in the global Systems Engineering community.",
+                        abstract: "This talk will address the challenges and modern approaches in aircraft systems engineering in the face of the growing threat of cyberattacks against integrated avionics platforms."
+                    },
+                    {
+                        time: "12:10 - 13:30",
+                        type: "social",
+                        title: "Lunch Interval",
+                        room: "-",
+                        category: "social"
+                    },
+                    {
+                        time: "13:30 - 15:30",
+                        type: "parallel",
+                        tracks: [
+                            {
+                                id: "ts1",
+                                title: "Technical Session I: Healthcare Systems",
+                                room: "Espaço Cultural Dois de Julho - Auditorium",
+                                category: "technical",
+                                papers: [
+                                    { title: "A Private 5G Architecture For Healthcare", authors: "Maria Katarine Santana Barbosa (UFPE), Jeiel Santana (UFPE), Victor Silva e Oliveira (UFPE), Carlos Veeck (UFPE), Anderson Queiroz (UFPE), Kelvin Dias (UFPE)" },
+                                    { title: "On-Device Gait Classification Under a Latency Budget: Per-Stage Characterization of a Generative Cascade", authors: "Patrick Alvim (UFOP), Jonathan Silva (UFOP), Vicente P. Amorim (Dell Technologies), Pedro Sebastião de Oliveira Lazaroni (Orthopedics and Traumatology Center - NOT), Mateus Coelho Silva (UFABC), Ricardo Augusto Rabelo R. Oliveira (UFOP)" },
+                                    { title: "Estimativa de Frequência Respiratória Usando Dados Wi-Fi CSI Comparado com Estimativa Usando Acelerômetro", authors: "Abel Cabral de Arruda (UFF), Fábio Gabriel de Queirós (UFF), Raphael Guerra (UFF), Debora C. Muchaluat-Saade (UFF), Célio Albuquerque (UFF)" },
+                                    { title: "Análise do Trade-off Redução de Canais e Quantização para Biometria por EEG", authors: "Ederson Naves Fernandes Gonçalves Júnior (UFOP), Arthur Negrão de Faria Martins da Costa (UFOP), Guilherme Paes (UFOP), Eduardo Jose da Silva Luz (UFSJ), Guilherme Silva (UFOP), Pedro Silva (UFSJ)" },
+                                    { title: "Análise da Exposição Corporal à Radiação em Redes Corporais sem Fio com Protocolos MAC Baseados em TDMA", authors: "Willians de Paula Pereira (IFRO, UFBA), Jorge Farias Herculano (UFBA), Luís Otávio Santos de Andrade (IFS, UFBA), Alirio Santos de Sá (UFBA)"},
+                                    { title: "Detecção de Apneia Utilizando Dados de CSI Wi-Fi e 1D-CNN", authors: "Paulo Vitor Novaes Cardozo (UFF), Iandra Galdino (UFF), Fábio Gabriel de Queirós (UFF), Raphael Guerra (UFF), Célio Albuquerque (UFF), Taiane Ramos (UFF), Debora C. Muchaluat-Saade (UFF)"}
+                                ]
+                            },
+                            {
+                                id: "ts2",
+                                title: "Technical Session II: Vehicular Networks and Systems",
+                                room: "Room Santo Antonio Além do Carmo",
+                                category: "technical",
+                                papers: [
+                                    { title: "Crash-Aware Traffic Prioritization in Vehicular Wi-Fi: A Simulation Study of Channel Access and Adaptive Blocking", authors: "Gabriel Aguiar (UFSC), Enzo Spotorno (UFSC), Giovani Gracioli (UFSC)" },
+                                    { title: "A Mission-Level Digital Twin for Hybrid Fleets of Physical and Virtual Unmanned Vehicles", authors: "Filipo Novo Mor (PUCRS), Cássio Jones Dhein da Silva (PUCRS), Anderson Domingues (PUCRS), Thais Webber (Aston University, UK), César Augusto Marcon (PUCRS)" },                                    
+                                    { title: "Vision-Based ROS 2 Embedded Control System for Autonomous Whale Tracking", authors: "Ana Tereza Souza (UFSC), Leandro Buss Becker (UFSC)" },
+                                    { title: "A Hardware-Partitioned micro-ROS Mini-Vehicle for Operator-Supervised Neural Driving", authors: "Gustavo Claudio Karl Couto (UFSC), Eric Antonelo (UFSC), Gabriel Zipperer (UFSC)" },
+                                    { title: "Compressing a Transformer-based Perception Module for a UAV Visual Active Tracking System", authors: "Bruna Henning Pereira (UNIVALI), Cesar Albenes Zeferino (UNIVALI), Alberto Dionigi (University of Perugia, Italy), Gabriele Costante (University of Perugia, Italy) " },
+                                    { title: "Integrating Embedded BDI Agents with Communication Mechanisms used in UAV’s Autopilots", authors: "Felipe da Cunha Calegari (UFSC), Leandro Buss Becker (UFSC), Maiquel de Brito (UFSC)" }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        time: "15:30 - 16:00",
+                        type: "parallel",
+                        tracks: [
+                          {
+                             type: "social",
+                             title: "Break & Networking",
+                             room: "Networking area",
+                             category: "social"
+                          },
+                          {
+                            id: "robotdemo",
+                             type: "social",
+                             title: "Industry Day - Robotics Demo (15:20h - 15:50h)",
+                             room: "Patio",
+                             category: "social",
+                             details: "Industry Day Robotics Demo - Arcanjo Robot from IPQ Tecnologia"
+
+                          },
+                          {
+                            id: "studentforum-poster1",
+                            type: "social",
+                            title: "Student Forum Poster Session I",
+                            room: "Networking area",
+                            category: "technical",
+                            details: "André Alves de Freitas (UFC)<br> Andre de Castro Polo Norte Filho (UFPE) <br> Arthur Roberto da Silva	(UFC)<br>Douglas Wesley (UFRPE)<br>Fabio Gabriel de Queiros (UFF)<br>Hélio Martins de Araújo Costa Neto (UFMG)<br>Kauan Mateus Vidal De Brito (UNIVASF)<br>Lucas Emanuel Elias Alves (UFMG)<br>Luiz Henrique Brito Almeida da Silva (UFPE)<br>Raimundo Ferreira do Nascimento Junior (UNIVASF)<br>Rodrigo Mendes Peixoto (UFJF)<br>Theógenes Gabriel Araújo de Andrade (UNIVASF)<br>Thiago de Morais Martins (UFRPE)<br> William Marreiro Brito (UFC)"
+                          }
+                        ]
+                    },
+                    {
+                        time: "16:00 - 17:00",
+                        type: "keynote",
+                        title: "Safety in Physical AI: an Operating Systems Perspective",
+                        speaker: "Antonio Augusto Fröhlich",
+                        institution: "Federal University of Santa Catarina (UFSC)",
+                        room: "Espaço Cultural Dois de Julho - Auditorium",
+                        category: "keynote",
+                        bio: "Antônio Augusto Fröhlich is a full professor at the Federal University of Santa Catarina (UFSC), where he leads the Software and Hardware Integration Laboratory (LISHA) since 2001. He holds a PhD in Computer Engineering from the Technical University of Berlin (2001) and was a visiting researcher at the University of Paderborn (2007), at the University of California, Irvine (2016) and at the University of Luxembourg (2017). He has coordinated several RD&I projects in secure, connected and intelligent cyber-physical systems. Significant contributions from these projects have been incorporated into products developed by partner industries in the sectors of energy, industry automation and mobility.",
+                        abstract: "Artificial Intelligence is rapidly moving out of datacenters and into the physical world. We will soon be living among highly autonomous machines, including humanoid robots, autonomous vehicles, and military systems that, until recently, belonged to science fiction and to our nightmares. As this transition unfolds, safety moves from being a desirable property of individual systems to becoming a fundamental condition for our coexistence of increasingly autonomous machines. Nevertheless, the operating systems that are supporting this revolution have changed surprisingly little beyond the classic task-centric, real-time, network-capable, and cryptographically-enriched services envisioned more than 40 years ago. They provide mechanisms for executing and isolating software, managing resources, and meeting timing constraints, but offer much less support for continuously enforcing the physical safety constraints governing autonomous behavior. This talk explores this challenge from the perspective of SmartData, a concept developed at LISHA/UFSC over the past decade to address some of the fundamental limitations of making Sense–Compute–Communicate–Actuate loops more AI-ready while keeping their safety continuously observable and enforceable. The approach builds safety models around the same physical laws that govern the behavior of the systems, bringing those models into the computing infrastructure rather than leaving safety entirely to application-level logic. Autonomous vehicles being developed at UFSC provide a concrete case background for discussing this perspective and its implications for the operating systems of Physical AI."
+                    },
+                    {
+                        time: "17:00 - 18:00",
+                        type: "keynote",
+                        title: "Industry Panel - Intelligent Systems and Industry 4.0: Data Integration, Automation, and Artificial Intelligence for Decision-Making",
+                        speaker: "Paulo Frank, Guilherme Prudente da Silva",
+                        institution: " Moderator: Prof. Milos Manic",
+                        room: "Espaço Cultural Dois de Julho - Auditorium",
+                        category: "keynote",
+                        bio: "Paulo Frank (CEO - Automind)<br> Guilherme Prudente da Silva (Pesquisador - Centro de Pesquisa de Energia Elétrica (CEPEL)<br> Moderator: Milos Manic, Ph.D. (VCU/IEEE-IES)",
+                        abstract: "This panel explores how intelligent systems, data integration, industrial automation, and Artificial Intelligence (AI) are transforming decision-making in the context of Industry 4.0. Industry representatives will share practical experiences, discuss challenges in adopting emerging technologies, and explore future trends and opportunities for innovation."
+                    },
+                    {
+                        time: "18:30 - 19:20",
+                        type: "social",
+                        title: "Opening Ceremony",
+                        room: "Espaço Cultural Dois de Julho - Auditorium",
+                        category: "social"
+                    },
+                    {
+                        time: "19:30",
+                        type: "social",
+                        title: "Industry Day Reception",
+                        subtitle: "Sponsored by IES",
+                        room: "Social Area",
+                        category: "social"
+                    }
+                ]
+            },
+            2: {
+                title: "Day 2: Embedded Systems School",
+                subtitle: "Wednesday •  November 25, 2026 • Salvador - BA",
+                schedule: [
+                    {
+                        time: "08:00 - 08:30",
+                        type: "social",
+                        title: "Welcome & Registration",
+                        room: "Foyer",
+                        category: "social"
+                    },
+                    {
+                        time: "08:30 - 10:30",
+                        type: "parallel",
+                        tracks: [
+                            {
+                                id: "esse2",
+                                title: "Aidge Framework: An open-source and collaborative framework for designing, optimizing, and deploying embedded AI",
+                                room: "Espaço Cultural Dois de Julho - Auditorium",
+                                category: "school",
+                                speaker: "Iryna de Albuquerque Silva, Axel Farrugia, Filipo Perotto, Antonio Pereira",
+                                institution: "CEA, France and ONERA, France",
+                                details: "Embedded AI is currently one of the most dynamic and strategically important areas of research and development. Having a platform that is open-source, transparent (“white-box”), and interoperable with other tools in the design and deployment flow of ML algorithms is essential to enable reproducibility, accelerate innovation, and foster collaboration between academia and industry. Aidge addresses this need by providing a development framework for researchers, students, and industrial actors working on efficient, explainable, and portable AI solutions for embedded and edge applications. This hands-on tutorial will be of particular interest to participants involved in AI/ML design automation, embedded software-hardware co-design, and open-source toolchain integration. It is expected to attract participants interested in manipulating, optimizing, and exporting neural networks. The intended audience may include students, researchers, engineers from industry, and AI enthusiasts or curious learners interested in practical tools for edge and embedded AI. Attendees may value a tool that is under active development, offering a wide range of accessory functionalities and the flexibility to support specialized requirements (e.g., custom code generation for specific hardware targets)."
+                            },
+                            {
+                                id: "ts3",
+                                title: "Technical Session III: Real-Time Systems and Resource Management",
+                                room: "Room Santo Antonio Além do Carmo",
+                                category: "technical",
+                                papers: [
+                                    { title: "Server-Based Gang Task Scheduling", authors:"Shardul Lendve (University of Porto, Portugal), Konstantinos Bletsas (University of Porto, Portugal), Pedro Souto (University of Porto, Portugal)"},
+                                    { title: "NTP Time Synchronization Performance in Embedded Linux Systems for Industry 4.0", authors:"Isaac Vinícius dos Santos Silva (UFC), Jose Adrian Nascimento Silva (UFC), Klaus Pereira Becker (Altus), Igor Tedeschi Franco (Altus), Bonfim Amaro Junior (UECE), Francisco Helder Candido Filho (UFC), Arthur de Castro Callado (UFC)"},
+                                    { title: "Identifying Execution Regimes for Reliable Characterization of Execution-Time Samples on Modern Computing Platforms", authors:"Jamile de Barros Vasconcelos (UFBA), George Marconi de Araújo Lima (UFBA), Verônica Lima (UFBA)"},
+                                    { title: "Feasibility interval for real-time offline schedulers considering preemption costs of independent and dependent tasks", authors:"Falou Ndoye (Supdeco, Senegal), Liliana Cucu-Grosjean (INRIA, France), Yves Sorel (INRIA, France)"},
+                                    { title: "Challenges of IPC Class-Aware Scheduling on Raptor Lake Processors in the Linux Kernel", authors:"Lucas Nóbrega (UFPB), Tiago Pereira Nascimento (UFPB), Davi Santos (UFPB)"},
+                                    { title: "MACCA: Controle Adaptativo de Taxa de Bits para Servidores de Jogos em Nuvem", authors:"Cesar Morais (UFMG), Luiz Filipe Menezes Vieira (UFMG)"}
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        time: "10:30 - 11:00",
+                        type: "parallel",
+                        tracks: [
+                           {
+                               title: "Break & Networking",
+                               room: "Networking Area",
+                               category: "social"
+                           },
+                           {
+                              id: "poster1",
+                              title: "Poster Section I - Edge AI",
+                              room: "Networking Area",
+                              category: "technical",
+                              papers: [
+                                  { title: "Low Computational Cost Approach for Human Action Recognition: A Geometric and Temporal Attribute Analysis on the UCF101 Dataset", authors: "Mabiu Moura Coelho (IFCE), Calleo Barroso (IFCE), Hosana Fernandes Gomes (IFCE), Suane Pires Pinheiro da Silva (IFCE), Pedro Pedrosa Rebouças Filho (IFCE)" },
+                                  { title: "Simulated Evaluation of Somatic Q-Learning for Context-Aware Mobile Personalization", authors: "Alcilene Batista dos Santos (UFAM), Rosiane de FreitasR (UFAM), Raimundo da Silva Barreto (UFAM)" },
+                                  { title: "Performance Tradeoffs Analysis for Embedded AI Visual Perception System", authors: "Thiago Coelho Medeiros (UFSC), Leandro Buss Becker (UFSC)" },
+                                  { title: "Digital Wave Guide Hardware Acceleration for Acoustic Simulation using System on Chip FPGAs", authors: "Gustavo Oliveira (UnB), Daniel Mauricio Muñoz Arboleda (UnB)" },
+                                  { title: "Accelerating TinyML on RISC-V: Methodology and FPGA Prototyping of a Custom Instruction Extension for Random Forest", authors: "Rafael Resende Soares (UFV), Tatiana G. da Silva Ribeiro (UFV), Gean Augusto Lino de Oliveira (UFV), Racyus Pacífico (UFOP), Ricardo dos Santos Ferreira (UFV), Lucas Bragança (UFV), José Augusto Miranda Nacif (UFV)" },
+                                  { title: "Dispositivo de Baixo Custo para Detecção de Falhas em Hélices de Drones Baseado em Sinais de Vibração Utilizando TinyML", authors: "André Alves de Freitas (UFC), Maryana Moraes Sousa (UFC), Marcus Vinicius Alves Nogueira (UFC), David Silva (UFC), Thiago Werlley Bandeira Silva (UFC)" }
+                              ]
+                           }
+                        ]
+                    },
+                    {
+                        time: "11:00 - 12:10",
+                        type: "keynote",
+                        title: "How to construct dependable operating systems and the hardware it should run on",
+                        speaker: "Marcus Völp",
+                        institution: "Université du Luxembourg",
+                        room: "Espaço Cultural Dois de Julho - Auditorium",
+                        category: "keynote",
+                        bio: "Prof. Dr.-Ing. Marcus Völp is full professor and head of the CritiX lab at the Interdisciplinary Centre for Security, Reliability and Trust (SnT) at the University of Luxembourg. He received his PhD in computer science in 2011 from Technische Universität Dresden. His research interests include methods, tools, and system architectures for constructing resilient cyber-physical and embedded systems that are capable of simultaneously guaranteeing a wide range of system properties, including soft and hard real-time guarantees, security guarantees and information flow properties, dependability and, of course, fault and intrusion tolerance and cyber resilience. Application domains of interest include Industry 4.0, cloud, edge, autonomous vehicles, spacecraft and systems software and hardware components such as microkernels and hardware transactional memory.",
+                        abstract: "Operating systems today are the backbone for tapping into the computational power of underlying hardware, multiplexing resources and specifically accelerator accesses, connecting to other nodes or network-attached storage, and controlling the physical assets a system is entrusted with. Yet an operating system after all is a software component and can fail in the same way applications do, albeit possibly with system-wide consequences. In this keynote, I would like to share with you some of my thoughts and introduce you to some of the works that my team has “already done” to answer the question posed in the title. However, at the same time, I would like to invite you to a heated discussion and joint system design session answering questions like: 'What can we learn from large scale systems for the small?', 'How can we secure timely responses in the presence of attacky?', 'How can we ensure the most fundamental layers survive?' and 'How can we provide the illusion of a simple, fault-free system to programmers, even if reality diverges?'. Join me in this keynote / interactive discussion on how to construct dependable operating systems and the hardware they run on."
+                    },
+                    {
+                        time: "12:10 - 13:30",
+                        type: "social",
+                        title: "Lunch Interval",
+                        room: "-",
+                        category: "social"
+                    },
+                    {
+                        time: "13:30 - 15:30",
+                        type: "parallel",
+                        tracks: [
+                            {
+                                id: "ts4",
+                                title: "Technical Session IV: EdgeAI I",
+                                room: "Espaço Cultural Dois de Julho - Auditorium",
+                                category: "technical",
+                                papers: [
+                                    { title: "ReCoNNet: A Lightweight Runtime Reconfigurable Convolutional Neural Network", authors: "Vinicius Gabriel Schultz (UFSM), Bruno Henrique Spies (UFSM), Mathias Cirolini Michelotti (UFSM), Leonardo Londero Oliveira (UFSM), Everton Alceu Carara (UFSM)"},
+                                    { title: "Paying for Accuracy at Training Time: A Zero-Overhead Loss Function for Compact Grapheme-to-Phoneme Models", authors: "Leonardo Marques de Souza (UTFPR)"},
+                                    { title: "Tiny Continual Soft Sensors for Industrial Pressure Estimation under Operational Drift", authors: "Luís Gustavo Vitorino de Souza (ITV, UFOP), Arthur Negrão de Faria Martins da Costa (UFOP), Pedro Silva (UFOP), Eduardo Jose da Silva Luz (UFOP)"},
+                                    { title: "FALIN: Fast and Lightweight Image Networks for Time-Series Classification", authors: "Olavo Barros (UFV), Racyus Pacífico (UFOP), Michel Melo Silva (UFV), José Augusto Miranda Nacif (UFV), Ricardo dos Santos Ferreira (UFV)"},
+                                    { title: "Bringing Network Anomaly Detection to the Edge: A Low-Cost ESP32-Based AI Monitor", authors: "Marcelino Camilo (IFPB), Luis Henrike Marinho (IFPB), Paulo Ditarso Maciel Jr. (IFPB)"},
+                                    { title: "BTreeFy: um framework de Behavior Trees para Sistemas Embarcados com Recursos Restritos", authors: "Victor Oliveira (UFAL), José Gomes Da Silva Junior (UFAL), José Renilson Almeida da Silva (UFAL), Rodrigo José Sarmento Peixoto (UFAL), Bruno Nogueira (UFAL), Alfredo Lima (UFAL)"}
+                                ]
+                            },
+                            {
+                                id: "ts5",
+                                title: "Technical Session V: Dependability",
+                                room: "Room Santo Antonio Além do Carmo",
+                                category: "technical",
+                                papers: [
+                                    { title: "Empirical Characterization of Software Failure Time Distributions in Real Operational Environments", authors: "Nuno Cá (UFU), Evelyn Natalie Aguiar de Almeida (UFU), Rivalino Matias Jr. (UFU)" },
+                                    { title: "A Kubernetes-Native Architecture for Composing State Machine Replication", authors: "Rodrigo W. Bonatto (UFSC), Thaís Bardini Idalino (UFSC), Odorico M. Mendizabal (UFSC)" },
+                                    { title: "Adaptive Defense against Machine Learning-Guided Fault Injection via Bimodal Quantization-Aware Training", authors: "Antônio Herbert da Silva Francelino (IFCE), José Ronaldo (IFCE), Otávio Alcântara de Lima Júnior (IFCE)" },
+                                    <!-- { title: "RIFT-V: A High-Level Framework for Statistical Fault Injection in TinyML on RISC-V Microcontrollers", authors: "José Ronaldo (IFCE), Otávio Alcântara de Lima Júnior (IFCE), Kayke Oliveira (IFCE), Luana Moura (IFCE), Glaucionor Lima de Oliveira (IFCE), Mitchel Bomfim (IFCE)" }, -->
+                                    { title: "On the Effectiveness of Statistical Fault Injection Paradigms for Predictive Vulnerability Modeling of Quantized DNNs", authors: "José Ronaldo (IFCE), Otávio Alcântara de Lima Júnior (IFCE), Herbert Silva (IFCE) " },
+                                    { title: "HALoS: Um Framework de Co-simulação Heterogênea para Validação de Firmwares em Sistemas Ciber-Físicos", authors: "Cleber Peter (UFPel, Alexandre Renato Rodrigues de Souza (IFRS), Helida Santos (FURG), Giancarlo Lucca (FURG), Renata H. S. Reiser (UFPel), Adenauer Yamin (UFPel)" }
+                                ]
+                            },
+                            {
+                                id: "esc1-presentation",
+                                title: "ESC Presentations",
+                                room: "Room Castro Alves",
+                                category: "technical",
+                                details:"<li>Sistema de Pré-Triagem Médica e Estimação de Pressão Arterial com Inteligência Artificial </li><li> Cin's Anatomy </li><li> AgroEdge: Sistema Embarcado Inteligente para Manejo de Irrigação de Precisão utilizando Edge Computing, Modelagem FAO-56 e TinyML </li><li> Cãopositor V7: Ressignificação de Brinquedo Musical como Groovebox e Controlador MIDI Baseado na BitDogLab </li><li> Sentinel-LR: Módulo Reprodutível de Segurança por Fusão LiDAR–Enlace para Robôs Móveis </li><li> RAPHA: Robotic Arm for Physical Therapy Assistance </li><li> Sistema de Monitoramento de Qualidade do Ar </li><li> Sistema Inteligente de Detecção de Vazamentos Hídricos </li><li> TecVida </li><li> CAN-Sniffer: Ferramenta de Baixo Custo para Monitoramento em Tempo Real de Redes CAN Veiculares com Simulador de ECU na Plataforma BitDogLab </li><li> NeuroTriagemAI: Sistema Embarcado de Visão Computacional para Triagem de Pacientes com Suspeita de AVC ou AIT </li><li> Beebox </li><li> VigIA: Vigilância Inteligente e Assistiva para Idosos em Regiões com Infraestrutura Limitada </li><li> Barry: Sistema Embarcado De Busca e Resgate </li><li> Tremo: Sistema Embarcado de Baixo Custo para Monitoramento e Avaliação de Tremores Parkinsonianos </li><li> AgriTower: Torre Hidropônica Autônoma com IA Embarcada para Otimização de Nutrientes </li><li> Radar Wi-Fi para Automação Inteligente e Segurança em Ambientes Internos </li><li> Atlas: dispositivo de captação de sinais via EEG para interfaces cérebro-computador" 
+                            }
+                        ]
+                    },
+                    {
+                        time: "15:30 - 16:00",
+                        type: "parallel",
+                        tracks: [
+                           {
+                              type: "social",
+                              title: "Break & Networking",
+                              room: "Área de Convivência",
+                              category: "social"
+
+                           },
+                           {
+                              id:"studentforum-poster2",
+                              type: "social",
+                              title: "Student Forum Poster Section II",
+                             room: "Networking area",
+                             category: "technical", 
+                             details: "Breno Henrique Nascimento de Andrade(UFOP)<br> Gabriel Martins (UFSC) <br> Jose Ronaldo de Souza Silva (UFPE)<br>Luan Ferreira Machado(UFOP)<br>Luiz Gustavo Santa Cruz Silva Segundo (UFPE)<br>Mabiu Moura Coelho (IFCE)<br>Olavo Alves Barros Silva (UFV)<br>Rafael Resende Soares (UFV)<br>Rhauani Weber Aita Fazul (UFSC)<br>Rômulo José Pereira da Costa Júnior (UFAM)<br>Titho Livio Duarte Melo	(UFPE)<br>Vinicius Gabriel Schultz (UFSM)<br>Yuri Silva Vaz (UFPel)"
+                           }
+                        ]
+                    },
+                    {
+                        time: "16:00 - 17:00",
+                        type: "keynote",
+                        title: "When Are Failures Observable? System Models, Fault Models, and Limits",
+                        speaker: "Raimundo Macêdo",
+                        institution: "Federal University of Bahia (UFBA)",
+                        room: "Espaço Cultural Dois de Julho - Auditorium",
+                        category: "keynote",
+                        bio: "Dr. Raimundo is a Professor of Computer Science at the Federal University of Bahia (UFBA) in Brazil. He founded and is currently the head of the Distributed Systems Laboratory (LaSiD) at UFBA.",
+                        abstract: "Distributed systems do not observe failures directly; they observe events—or the absence of expected events. Whether such observations indicate a crash, a timing violation, Byzantine behavior, or merely slow execution depends fundamentally on the underlying system model. In this sense, observability precedes detectability: observability concerns whether faulty behavior is distinguishable from admissible behavior under a given model, whereas detectability concerns whether an algorithm can exploit that distinction. This keynote explores the interplay between system and fault models, from classical synchrony and asynchrony to partial synchrony and alternative models of progress. We examine how assumptions about timing, communication, process behavior, redundancy, and application semantics determine which failures are observable and detectable and, ultimately, which distributed problems can be solved. When perfect detection is impossible, weaker guarantees and quantitative measures of detection quality become necessary. Theoretical guarantees, however, are meaningful in practice only when model assumptions adequately represent the execution environment. We therefore consider assumption coverage: the extent to which such assumptions can be justified by design, empirical observation, or runtime evidence. The talk concludes with the Eventual Relative-Speed (ERS) model, which takes a less conventional perspective on fail-silent behavior. Rather than inferring failure directly from elapsed physical time, ERS characterizes process activity through relative logical progress. After stabilization, correct processes remain within a bounded logical divergence; consequently, a process that persistently falls behind the evolving causal structure becomes distinguishable from correct processes. This enables adaptive failure detection based on logical divergence and illustrates the keynote’s central argument: observability, detectability, and computability are inseparable from the system model and the extent to which its assumptions hold in reality."
+                    },
+                    {
+                        time: "17:00 - 18:40",
+                        type: "parallel",
+                        tracks: [
+                            {
+                                id: "ts6",
+                                title: "Technical Session VI: EdgeAI II",
+                                room: "Espaço Cultural Dois de Julho - Auditorium",
+                                category: "technical",
+                                papers: [
+                                    { title: "Safety-Aware Embedded Agentic AI for Mining Edge Systems: An Experimental Evaluation of Offline RAG, LogicGuard and MCP", authors: "Breno Andrade (UFOP), Charles T. B. Garrocho (IFMG), Fernando Augusto Medeiros Silva (UFOP), Ricardo Augusto Rabelo R. Oliveira (UFOP)" },
+                                    { title: "Delta-Based Over-the-Air Updates for Embedded Machine Learning Models over Bluetooth Low Energy", authors: "Julia Azziz (Universidad de la Republica, Uruguay), Andres Sere (Universidad de la Republica, Uruguay), Leonardo Steinfeld (Universidad de La República, Uruguay)" },
+                                    { title: "A Comparison of Machine Learning Libraries Across Heterogeneous Embedded Platforms", authors: "Gabriel Martins (UFSC), Eduardo Bischoff Grasel (UFSC), Rafael Canal (UFSC), Giovani Gracioli (UFSC)" },
+                                    { title: "Embedded DETR-Based Scene Detection for Driver-Assistance Systems", authors: "Bernardo Vannier Soares Pinto (UNIVALI), Gabriel Bodenmüller (UNIVALI), Juan Gabriel Holtz Fenoy (UNIVALI), Felipe Viel (UNIVALI)" },
+                                    { title: "Cost-Aware Adversarial Robustness Evaluation for ML-Based Intrusion Detection in 5G Network Slicing", authors: "Joao Vitor da Silva Campos (UFPE), Abdel Chabi (UFPE), Andson Marreiros Balieiro (UFPE)" },
+                                    { title: "Consultas Geoespaciais com SLMs Usando TerraModel: Quantização e Desempenho em CPUs", authors: "Thiago Nisimura (UFPA), Aldebaro B. R. Klautau (UFPA)" }
+                                ]
+                            },
+                            {
+                                id: "ts7",
+                                title: "Technical Session VII: Security",
+                                room: "Room Santo Antonio Além do Carmo",
+                                category: "technical",
+                                papers: [
+                                    { title: "A Hierarchical Attack Detection Solution for 6G MEC-based IoT Networks", authors: "Luiz Henrique Brito Almeida da Silva (UFPE), Jose Ronaldo de Souza Silva (UFPE), Caio de Souza (UFPE,UPE), Andson Marreiros Balieiro (UFPE)" },
+                                    { title: "Zero-Day Attack Detection in 6G-Enabled IoT Networks: A Feasibility and Performance Analysis", authors: "Jose Ronaldo de Souza Silva (UFPE), Luiz Henrique Brito Almeida da Silva (UFPE), Caio de Souza (UFPE), Andson Marreiros Balieiro (UFPE)" },
+                                    { title: "LWC-Guide: A Multiview Decision-Support Framework for Lightweight Cryptography Selection in IoT Systems", authors: "Yuri Silva Vaz (UFPel), Julio C. B. Mattos (UFPel), Rafael Soares (UFPel)" },
+                                    { title: "Chaos-Based Image Watermarking Using Finite-Precision Error", authors: "Renan Silva (UFMG), Matheus Carvalho (UFMG), Samuel Silva (UFMG), Janier Arias-Garcia (UFMG), Lucas Nardo (UFMG)" },
+                                    { title: "HSAE Ensemble for Zero-Day Attack Detection in Heterogeneous Network Environments", authors: "Fabiano Carlos da Silva (CESAR School), Franklin Arthur Mendes Venceslau (UFPE), José Augusto Suruagy Monteiro (CESAR School), Rafael Roque de Souza (CESAR School)" },
+                                    { title: "Detecção de Intrusão em Redes com Sistema Multiagente e Orquestração Adaptativa", authors: "Bernardo Nunes (UFMG), Luiz Filipe Menezes Vieira (UFMG), Marcos Augusto Menezes Vieira (UFMG)" }
+                                ]
+                            },
+                            {
+                                id: "esc2-presentation",
+                                title: "ESC Presentations",
+                                room: "Room Castro Alves",
+                                category: "technical",
+                                details: "<li>Sistema de Pré-Triagem Médica e Estimação de Pressão Arterial com Inteligência Artificial </li><li> Cin's Anatomy </li><li> AgroEdge: Sistema Embarcado Inteligente para Manejo de Irrigação de Precisão utilizando Edge Computing, Modelagem FAO-56 e TinyML </li><li> Cãopositor V7: Ressignificação de Brinquedo Musical como Groovebox e Controlador MIDI Baseado na BitDogLab </li><li> Sentinel-LR: Módulo Reprodutível de Segurança por Fusão LiDAR–Enlace para Robôs Móveis </li><li> RAPHA: Robotic Arm for Physical Therapy Assistance </li><li> Sistema de Monitoramento de Qualidade do Ar </li><li> Sistema Inteligente de Detecção de Vazamentos Hídricos </li><li> TecVida </li><li> CAN-Sniffer: Ferramenta de Baixo Custo para Monitoramento em Tempo Real de Redes CAN Veiculares com Simulador de ECU na Plataforma BitDogLab </li><li> NeuroTriagemAI: Sistema Embarcado de Visão Computacional para Triagem de Pacientes com Suspeita de AVC ou AIT </li><li> Beebox </li><li> VigIA: Vigilância Inteligente e Assistiva para Idosos em Regiões com Infraestrutura Limitada </li><li> Barry: Sistema Embarcado De Busca e Resgate </li><li> Tremo: Sistema Embarcado de Baixo Custo para Monitoramento e Avaliação de Tremores Parkinsonianos </li><li> AgriTower: Torre Hidropônica Autônoma com IA Embarcada para Otimização de Nutrientes </li><li> Radar Wi-Fi para Automação Inteligente e Segurança em Ambientes Internos </li><li> Atlas: dispositivo de captação de sinais via EEG para interfaces cérebro-computador" 
+                            }
+                        ]
+                    },
+                    {
+                        time: "18:30 - 20:00",
+                        type: "parallel",
+                        tracks: [
+                          {
+                             title: "TPC Meeting",
+                             room: "Espaço Cultural Dois de Julho - Auditorium",
+                             category: "social"
+                          },
+                          {
+                             title: "IES Travel Grant Recognition Ceremony",
+                             room: "Room Santo Antonio Além do Carmo",
+                             category: "social"
+
+
+                          }
+                      ]
+                    }
+                ]
+            },
+            3: {
+                title: "Day 3: Satellite Events",
+                subtitle: "Thursday • November 26, 2026 • Salvador - BA",
+                schedule: [
+                    {
+                        time: "08:30 - 10:30",
+                        type: "parallel",
+                        tracks: [
+                            {
+                                id: "ts8",
+                                title: "Technical Session VIII: Quantum Computing",
+                                room: "Room Santo Antonio Além do Carmo",
+                                category: "technical",
+                                papers: [
+                                    { title: "A Multi-Gigabit Dynamic Toeplitz-Based Randomness Extractor for QRNGs on FPGA", authors: "José Batista (SENAI CIMATEC), Hugo Bessa (SENAI CIMATEC), Glenda Barbosa Nascimento (SENAI CIMATEC), Lucas Galvão (SENAI CIMATEC), Nelson Neto (SENAI CIMATEC), Valeria Loureiro da Silva (SENAI CIMATEC)" },
+                                    { title: "An Empirical Analysis of Post-Quantum Signatures on Resource-Constrained Microcontrollers", authors: "Yuri Silva Vaz (UFPel), Julio C. B. Mattos (UFPel), Rafael Soares (UFPel), Kristtopher Kayo Coelho (UFV), Pedro Miranda (UFV), José Augusto Miranda Nacif (UFV)" },
+                                    { title: "Fixed-Point Error Analysis of the Digital Signal Processing Chain in Continuous-Variable Quantum Key Distribution Systems", authors: "David Machado Couto Bezerra (SENAI CIMATEC, UFBA), Davi Juvêncio Sousa (SENAI CIMATEC), Jes de Jesus Fiais Cerqueira (UFBA), Nelson Neto (SENAI CIMATEC)" },
+                                    { title: "Symbolic Formal Verification of Quantum Circuits for Post-Quantum Cryptography Governance in Critical Infrastructures", authors: "Rafael Silvestrim (UFAM), Juan J. Gouvea (Juno Woz Labs), Manoel Fernandes Amaral Filho (UFAM, UEA), Alberjan Pinto (UFAM, CITS.AM), Iury V. de Bessa (UFAM), Anderson F. P. dos Santos (IME, Venturus Center for Technological Innovation), Lucas Carvalho Cordeiro (UFAM, University of Manchester, UK)" },
+                                    { title: "System-Level UVM Verification of a Privacy Amplification Accelerator in CV-QKD", authors: "Ramylla Luiza Barbalho Gomes Bezerra (SENAI CIMATEC, UFBA), Linton Esteves (SENAI CIMATEC), Paulo César Machado de Ab Farias (UFBA), Nelson Neto (SENAI CIMATEC)" },
+                                    { title: "Architectures for DSP Acceleration in RISC-V-Based CV-QKD Systems: A Systematic Review", authors: "Gustavo Sousa (SENAI CIMATEC, UFBA, CEPEDI), Davi Juvêncio Sousa (SENAI CIMATEC), Wagner Luiz Alves de Oliveira (UFBA), Nelson Neto (SENAI CIMATEC), Jes de Jesus Fiais Cerqueira (UFBA)" }
+                                ]
+                            },
+                            {
+                                title: "SCoRe Workshop: Sustainable Computing",
+                                room: "Room Castro Alves",
+                                category: "school",
+                                details: "Apresentação de trabalhos focados em reuso de tecnologia e computação verde."
+                            }
+                        ]
+                    },
+                    {
+                        time: "10:30 - 11:00",
+                        type: "parallel",
+                        tracks: [
+                           {
+                               type: "social",
+                               title: "Break & Networking",
+                               room: "Networking Area",
+                               category: "social"
+                           },
+                           {
+                              id: "poster1",
+                              title: "Poster Section II -  Quantum Computing - Networking and Distributed Systems",
+                              room: "Networking Area",
+                              category: "technical",
+                              papers: [
+                                  { title: "Mitigating Barren Plateaus in Variational Quantum Algorithms: A Systematic Mapping of Strategies and Architectures", authors: "Edson Rodrigues de Oliveira (UFG), Analucia Schiaffino Morales (UFSC), Iwens Sene Jr (UFG)" },
+                                  { title: "Severity Prediction System for Kubernetes Clusters: A Machine Learning Approach to Event Prioritization", authors: "Camilla Martins (UNIRIO), Pedro Nuno Moura (UNIRIO), Sidney Cunha de Lucena (UNIRIO), Laura O. Moraes (UNIRIO)" },
+                                  { title: "Reuse of RK3229 TV Boxes as HPC Clusters: Performance, Scalability, and Load Balancing Impact", authors: "Pedro Henrique Santos Souza Duarte (UESB), Fernando Ferreira (UESB), Matheus Nepomuceno (UESB), Jhonatan Silva (UESB), Marcelo Guimarães (UESB)" },
+                                  { title: "Uma Arquitetura Baseada em Digital Twin para Economia de Energia em Smart Classrooms", authors: "Rodrigo Peixoto (IFRJ), Edelberto Franco Silva (UFJF), Michael Barboza (UFJF)" },
+                                  { title: "Calibração de Modelos de Propagação LoRaWAN em Cenários de Embarcações de Competição", authors: "Helmuth Becker, Carlos Montez (UFSC), Rodrigo Lange (IFRS)" },
+                                  { title: "LeadLog: Detecção Proativa de Anomalias em Logs de Sistemas Distribuídos com Lead Time Operacional", authors: "Felipe dos Santos (UFPI), Erico Meneses Leão (UFPI), Ricardo Rabêlo (UFPI), Francisco Vasques (University of Porto, Portugal), Paulo Portugal (University of Porto, Portugal)" }
+                              ]
+                           }
+                        ]
+
+                    },
+                    {
+                        time: "11:00 - 12:10",
+                        type: "keynote",
+                        title: "DriveOS: A Single ECU Software-Defined Vehicle Management System",
+                        speaker: "Richard West",
+                        institution: "Boston University / Drako Tech",
+                        room: "Espaço Cultural Dois de Julho - Auditorium",
+                        category: "keynote",
+                        bio: "Rich West is a Professor in the Computer Science Department at Boston University, where he works with his research team on real-time and embedded operating systems. His work addresses issues concerning safety, security, predictability and resource management. He has an MS and PhD in Computer Science from the Georgia Institute of Technology, USA, and an MEng in Microelectronics and Software Engineering from the University of Newcastle-upon-Tyne, UK. He also works as the Chief Software Architect at Drako Tech, on the development of DriveOS for next generation vehicles. DriveOS consolidates vehicle functions on a centralized computing platform, by integrating real-time and safety critical services with non-critical software using a in-house partitioning hypervisor.",
+                        abstract: "Advances in modern automotive systems have led to traditional electronic control units (ECUs) being replaced with software-defined tasks. This has paved the way for functional consolidation, where chassis, body, powertrain, infotainment, and ADAS services are consolidated onto one or more zonal controllers. Taking this paradigm to the limit, it makes sense to consider whether a central compute platform is able to act as a single ECU for all vehicle functions, thereby reducing the costs and inflexibility of having dozens to hundreds of single fixed-function ECUs. This talk continues a series of presentations on DriveOS, a vehicle management system developed by Drako Tech, for use in electric vehicles. I will provide an update on the progress made with DriveOS, including an overview of past and future challenges, while identifying several key areas of research for future development of similar systems."
+                    },
+                    {
+                        time: "12:10 - 13:30",
+                        type: "social",
+                        title: "Lunch Interval",
+                        room: "-",
+                        category: "social"
+                    },
+                    {
+                        time: "13:30 - 15:30",
+                        type: "parallel",
+                        tracks: [
+                            {
+                                id: "ts9",
+                                title: "Technical Session IX: Applications I",
+                                room: "Espaço Cultural Dois de Julho - Auditorium",
+                                category: "technical",
+                                papers: [
+                                    { title: "Implementation of a Building Automation System with Temporal Planning and Internet of Things on a University Campus", authors: "Ana Lívia Lopes (UFC), Cecilia Mourão Carvalhedo Mesquita (UFC), Francisco Helder Candido Filho (UFC), Viviane Menezes (UFC)" },
+                                    { title: "An End-to-End Framework for Low-Cost Meter Digitization: Combining 3D Display Synthesis and Edge MCU Deployment", authors: "Talles de Sousa Costa (UFV), Daniel Tavares (UFV), Racyus Pacífico (UFOP), José Augusto Miranda Nacif (UFV), Ricardo dos Santos Ferreira (UFV)" },
+                                    { title: "Communication Dependability Evaluation of a Low-Cost Solar-Powered LoRa Weather Station for Urban Microclimate Monitoring", authors: "Valdinei M. de Oliveira (CEFET/RJ), Heder Dorneles Soares (INPE), Igor Cesar Gonzalez Ribeiro (CEFET/RJ), Luis Carlos Sacramento Jr. (CEFET/RJ), Fernando Carvalho (CESAR School, IFPE), Milena Faria Pinto (CEFET/RJ), Felipe Rocha Henriques (CEFET/RJ),  Raphael Guerra (UFF), Diego N. Brandão (CEFET/RJ)" },
+                                    { title: "Closing the Month Before the Month Closes: Reconstructing Cumulative Utility Totals from Predicted Increments in an Instrumented Plant", authors: "Leonardo Marques de Souza (UTFPR)" },
+                                    { title: "Batteryless NFC-Based Smart Frames for Non-Invasive Beehive Thermal Monitoring", authors: "Rodrigo Blanco (UDELAR, Uruguay), Nicolás Gugliucci (UDELAR, Uruguay), Lucas Olivera (UDELAR, Uruguay), Pablo Cracco (UDELAR, Uruguay), Andrés Seré (UDELAR, Uruguay), Leonardo Steinfeld (UDELAR, Uruguay)" },
+                                    { title: "Multiaxis Fault Detection in UAVs Using SAC-AM: A Lightweight Chaos-Based Signal Analysis", authors: "Nathan Rodrigues (UFPB), Ivanor Meira (UFPB), João Pedro Feitoza Primo (UFPB), Maelso Bruno (UFPB), Alisson Vasconcelos Brito (UFPB)" }
+                                ]
+                            },
+                            {
+                                title: "SCoRe Workshop",
+                                room: "Room Castro Alves",
+                                category: "school",
+                                details: "Sessões conjuntas com foco em energia sustentável e componentes reutilizáveis."
+                            },
+                            {
+                                title: "Secure and Safe Vehicles - IES Special Session ",
+                                room: "Room Santo Antonio Além do Carmo",
+                                category: "school",
+                                details: ""
+                            },
+                            {
+                                id: "esc_demo",
+                                title: "Embedded Systems Competition - Demo session",
+                                room: "Patio",
+                                category: "technical",
+                                details: "<b>Live Demonstration of the Finalist Prototypes in the Embedded Systems Competition.</b><br><br><li>Sistema de Pré-Triagem Médica e Estimação de Pressão Arterial com Inteligência Artificial </li><li> Cin's Anatomy </li><li> AgroEdge: Sistema Embarcado Inteligente para Manejo de Irrigação de Precisão utilizando Edge Computing, Modelagem FAO-56 e TinyML </li><li> Cãopositor V7: Ressignificação de Brinquedo Musical como Groovebox e Controlador MIDI Baseado na BitDogLab </li><li> Sentinel-LR: Módulo Reprodutível de Segurança por Fusão LiDAR–Enlace para Robôs Móveis </li><li> RAPHA: Robotic Arm for Physical Therapy Assistance </li><li> Sistema de Monitoramento de Qualidade do Ar </li><li> Sistema Inteligente de Detecção de Vazamentos Hídricos </li><li> TecVida </li><li> CAN-Sniffer: Ferramenta de Baixo Custo para Monitoramento em Tempo Real de Redes CAN Veiculares com Simulador de ECU na Plataforma BitDogLab </li><li> NeuroTriagemAI: Sistema Embarcado de Visão Computacional para Triagem de Pacientes com Suspeita de AVC ou AIT </li><li> Beebox </li><li> VigIA: Vigilância Inteligente e Assistiva para Idosos em Regiões com Infraestrutura Limitada </li><li> Barry: Sistema Embarcado De Busca e Resgate </li><li> Tremo: Sistema Embarcado de Baixo Custo para Monitoramento e Avaliação de Tremores Parkinsonianos </li><li> AgriTower: Torre Hidropônica Autônoma com IA Embarcada para Otimização de Nutrientes </li><li> Radar Wi-Fi para Automação Inteligente e Segurança em Ambientes Internos </li><li> Atlas: dispositivo de captação de sinais via EEG para interfaces cérebro-computador" 
+                            }
+                        ]
+                    },
+                    {
+                        time: "15:30 - 16:00",
+                        type: "parallel",
+                        tracks: [
+                           {
+                              type: "social",
+                              title: "Break & Networking",
+                              room: "Área de Convivência",
+                              category: "social"
+
+                           },
+                           {
+                            id:"studentforum-poster3",
+                             type: "social",
+                             title: "Student Forum Poster Session III",
+                             room: "Networking area",
+                             category: "technical",
+                             details: "Ana Alicy Ribeiro Dos Santos (UFC)<br>Ana Amélia de Sousa Santos (UFC)<br>Ana Lívia da Silveira Lopes (UNICAMP)<br>Cecilia Mourão Carvalhedo Mesquita (UFC)<br>Francisca Ariane dos Santos da Silva (UFC)<br>Jossiele Silva Santos (UFC)<br>Júlia Almeida Brainer Dantas (UFPE)<br>Maria Eduarda Santana Marques (UFC)<br>Maria José Barbosa Mendes (UFPE)<br>Maryana Moraes Sousa (UFC)<br>Priscila De Araujo Andrade (UNIVASF)<br>Samira Cikarele Silva Moreira dos Santos (UFPE)<br>Vitória Cavalcanti (UNIVASF)<br>Yasmim Taveira Lopes (UFPE)"
+                           }
+                        ]
+                    },
+                    {
+                        time: "16:00 - 17:00",
+                        type: "keynote",
+                        title: "From Fault Injection to Directed Fuzzing: Making Dependability Testing Intelligent",
+                        speaker: "Long Wang",
+                        institution: "Tsinghua University",
+                        room: "Espaço Cultural Dois de Julho - Auditorium",
+                        category: "keynote",
+                        bio: "Dr. Long Wang is the head of the REliability And Security Of Networks and Systems (REASONS) lab at Tsinghua University. His research interests focus on resiliency, security and understanding of systems, services and networks, especially when they are complicated, intelligent, autonomous, dynamic and/or software-defined. The scopes include security and reliability of systems, cloud computing, distributed systems, and system monitoring, measurement, assessment and modeling, as well as big data analytics and machine learning.",
+                        abstract: "Modern computing systems have become increasingly complex, making failure diagnosis and vulnerability discovery difficult due to the enormous space of faults, execution paths, system states, and program inputs. A key question is therefore: how can we make testing more intelligent by guiding it toward the system behaviors that matter most? In this talk, Prof. Wang will present his research journey in dependability and security testing. He first explored targeted fault injection for distributed-system failure diagnosis, followed by techniques for capturing and analyzing service-request execution paths. More recently, he extended these ideas to path-based system analysis, where path tracing supports failure diagnosis and path-aware fault injection helps uncover cross-layer vulnerabilities. Prof. Wang will then discuss how the same principle applies to directed fuzzing. IDFuzz uses information learned from fuzzing executions to guide mutations toward target code, while TrigFuzz goes beyond code reachability by using large language models to identify vulnerability-triggering conditions and guide fuzzing toward inputs that satisfy them. These studies illustrate a common direction: making testing more effective by progressively incorporating richer knowledge of system structure, execution behavior, and program semantics."
+                    },
+                    {
+                        time: "17:00 - 18:40",
+                        type: "parallel",
+                        tracks: [
+                            {
+                                id: "ts10",
+                                title: "Technical Session X: Applications II",
+                                room: "Espaço Cultural Dois de Julho - Auditorium",
+                                category: "technical",
+                                papers: [
+                                    { title: "Firmware-Level FRER-Inspired Redundancy for COTS-Based Rehabilitation Exoskeletons", authors: "Deimonril Gomes da Silva (USP), Bruno de Carvalho Albertini (EPUSP)" },
+                                    { title: "MADRQN: Uma Arquitetura Multiagente para Controle Residencial Baseada em Aprendizagem por Reforço", authors: "Rômulo Júnior (UFAM), Horácio Oliveira (UFAM), Raimundo da Silva Barreto (UFAM)" },
+                                    { title: "Captura e Anotação Semi-supervisionada de vídeo para detecção de Meliponas Subnitidas", authors: "Thiago Feitosa (IFCE), Wagner Guimarães Al-Alam (UFC), Antonio Rafael Braga (UFC)" },
+                                    { title: "Desempenho no Rastreamento de Abelhas na Borda: Impactos da Quantização e Amostragem Temporal", authors: "Marcos Veniciu Sá Barbalho (UFV), Tiago Nunes Matos (UFV), Taís A. da Silva Ribeiro (UFV), Ingrid Gomes (UFV), Helder Canto Resende (UFV), David Menotti (UFPR), Ricardo dos Santos Ferreira (UFV), José Augusto Miranda Nacif (UFV)" },
+                                    { title: "Fonocardiografia de Baixo Custo para Triagem de Sopro Cardíaco em Cães: Uma Linha de Base Compacta de Aprendizado Profundo para Implantação Embarcada", authors: "Thaynara Mabille Marques Ribeiro (UFG), Ronaldo Martins da Costa (UFG), Iwens Gervasio Sene Junior (UFG), Lucas Brandão (UFG)" },
+                                    { title: "Identificação Não Intrusiva de Cargas Elétricas: Abordagem Híbrida com Foco em Edge Computing", authors: "Felipe Feitosa (UFC), Luis Coutinho (UFC), André Alves de Freitas (UFC)" }                                    
+                                ]
+                            },
+                            {
+                                title: "SCoRe Workshop",
+                                room: "Room Castro Alves",
+                                category: "school",
+                                details: "Sessões conjuntas com foco em energia sustentável e componentes reutilizáveis."
+                            },
+                            {
+                                title: "Secure and Safe Vehicles - IES Special Session ",
+                                room: "Room Santo Antonio Além do Carmo",
+                                category: "school",
+                                details: ""
+                            },
+                            {
+                                id: "esc_demo2",
+                                title: "Embedded Systems Competition - Demo Session",
+                                room: "Patio",
+                                category: "technical",
+                                details: "<b>Live Demonstration of the Finalist Prototypes in the Embedded Systems Competition.</b><br><br><li>Sistema de Pré-Triagem Médica e Estimação de Pressão Arterial com Inteligência Artificial </li><li> Cin's Anatomy </li><li> AgroEdge: Sistema Embarcado Inteligente para Manejo de Irrigação de Precisão utilizando Edge Computing, Modelagem FAO-56 e TinyML </li><li> Cãopositor V7: Ressignificação de Brinquedo Musical como Groovebox e Controlador MIDI Baseado na BitDogLab </li><li> Sentinel-LR: Módulo Reprodutível de Segurança por Fusão LiDAR–Enlace para Robôs Móveis </li><li> RAPHA: Robotic Arm for Physical Therapy Assistance </li><li> Sistema de Monitoramento de Qualidade do Ar </li><li> Sistema Inteligente de Detecção de Vazamentos Hídricos </li><li> TecVida </li><li> CAN-Sniffer: Ferramenta de Baixo Custo para Monitoramento em Tempo Real de Redes CAN Veiculares com Simulador de ECU na Plataforma BitDogLab </li><li> NeuroTriagemAI: Sistema Embarcado de Visão Computacional para Triagem de Pacientes com Suspeita de AVC ou AIT </li><li> Beebox </li><li> VigIA: Vigilância Inteligente e Assistiva para Idosos em Regiões com Infraestrutura Limitada </li><li> Barry: Sistema Embarcado De Busca e Resgate </li><li> Tremo: Sistema Embarcado de Baixo Custo para Monitoramento e Avaliação de Tremores Parkinsonianos </li><li> AgriTower: Torre Hidropônica Autônoma com IA Embarcada para Otimização de Nutrientes </li><li> Radar Wi-Fi para Automação Inteligente e Segurança em Ambientes Internos </li><li> Atlas: dispositivo de captação de sinais via EEG para interfaces cérebro-computador" 
+                            }
+                        ]
+                    },
+                    {
+                        time: "19:30",
+                        type: "social",
+                        title: "Conference Dinner",
+                        room: "To be announced",
+                        category: "social"
+                    }
+                ]
+            },
+            4: {
+                title: "Day 4: Technical Sessions & Closing Ceremony",
+                subtitle: "Friday • Nov 27, 2026 • Salvador - BA",
+                schedule: [
+                    {
+                        time: "08:30 - 10:30",
+                        type: "parallel",
+                        tracks: [
+                            {
+                                id: "ts11",
+                                title: "Technical Session XI: Electronic System Design & Synthesis",
+                                room: "Espaço Cultural Dois de Julho - Auditorium",
+                                category: "technical",
+                                papers: [
+                                    { title: "Efficient Hardware Implementation of a Linear Regressor for Myokinetic Robotic Hand Control", authors: "Paulo Carvalho (UnB), Daniel Mauricio Muñoz Arboleda (UnB)" },
+                                    { title: "Evaluation of Vitis AI and hls4ml for ResNet8 Acceleration on a Zynq UltraScale+ FPGA Platform", authors: "Miguel Bertonzin (UNIVALI), Andre Herzfeld (UNIVALI), Thiago Jacques (UNIVALI), Cesar Albenes Zeferino (UNIVALI), Douglas Melo (UNIVALI)" },
+                                    { title: "Otimizing DSP Performance on RISC-V: A DIF-FFT Hardware Accelerator Implementation", authors: "Glenda Barbosa Nascimento (SENAI CIMATEC), Davi Juvêncio Sousa (QuIIN, SENAI CIMATEC), José Batista (SENAI CIMATEC), Nelson Neto (SENAI CIMATEC), Valeria Loureiro da Silva (SENAI CIMATEC)" },
+                                    { title: "XGrid: Design Exploration tool for FPGA XGBoost", authors: "Olavo Barros (UFV), Racyus Pacífico (UFOP), José Augusto Miranda Nacif (UFV), Ricardo dos Santos Ferreira (UFV)" },
+                                    { title: "An Architecture for Data Streams Coprocessing with RISC-V", authors: "Titho Lívio Duarte Melo (UFPE), Guilherme Fabri (UFPE), Lucas Cambuim (UFRPE), Edna Barros (UFPE), Victor Wanderley Costa de Medeiros (UFPE), Leandro Vynicius Ramos da Silva (UFPE)" },
+                                    { title: "Hardware Acceleration for Machine Learning Inference: Current Challenges and Trends in IoT and Edge Computing", authors: "Luan Machado (UFOP), Gabriel Pinto Toledo (UFV), Jorge Lucas Santos da Luz da Luz (UNIVIÇOSA), José Augusto Miranda Nacif (UFV), Ricardo dos Santos Ferreira (UFV), Cristiane Aparecida Lana (UFLA), Racyus Pacífico (UFOP)" }
+                                ]
+                            },
+                            {
+                                id: "ts12",
+                                title: "Technical Session XII: Networking & Communication",
+                                room: "Room Santo Antonio Além do Carmo",
+                                category: "technical",
+                                papers: [
+                                    { title: "Evaluating the Trade-off between Computational Overhead and Quality of Service in Reinforcement Learning xApps for Open RAN", authors: "Robert V. O. Gonçalves (UFC), Elvis Miguel Galeas Stancanelli (UFC), Francisco Helder Candido Filho (UFC)" },
+                                    { title: "Dispersion-Driven Dynamic Tuning of Particle Filter Hyperparameters for Mobile LoRaWAN ADR", authors: "Geraldo Abrantes Sarmento Neto (UFPI), Luis Henrique de Oliveira Mendes (UFPI), Pedro Felipe Ferreira de Abreu (UFPI), Bernan Nascimento (UFPI), Anderson Leonardo Sanches (UFABC), Alex Ferreira (UFRB), José Valdemir dos Reis Junior (UFPI)" },
+                                    { title: "On the Use of Temporal Lossy Compression Techniques for LoRaWAN Communication", authors: "Rodrigo Lange (IFRS), Carlos Barros Montez (UFSC), Paulo Portugal (University of Porto, Portugal), Érico Leão (UFPI), Richard Demo Souza (UFSC)" },
+                                    { title: "Affine Frequency Division Multiplexing under Oscillator Phase Noise over Doubly Dispersive 6G Terahertz Communications", authors: "Renato de Carvalho (UFABC), Samuel Gimenez de Oliveira (UFABC), Daniel Marchesi (CTI), Alex Ferreira (UFRB, UEFS), José Valdemir dos Reis Junior (UFPI), Shyqyri Haxha (University of London, UK), Antonio Jurado-Navas (Universidad de Malaga, Spain), Anderson Leonardo Sanches (UFABC), Thiago Roberto Raddo (University of Malaga, Spain)" },
+                                    { title: "Phase-Noise-Limited Operating Bandwidth of AFDM, OCDM, and OFDM over Doubly Dispersive 6G Terahertz Communications", authors: "Samuel Gimenez de Oliveira (UFABC), Renato de Carvalho (UFABC), Anderson Leonardo Sanches (UFABC), Daniel Marchesi (CTI), Alex Ferreira (UFRB, UEFS), José Valdemir dos Reis Junior (UFPI), Shyqyri Haxha (University of London, UK), Antonio Jurado-Navas (Universidad de Malaga, Spain), Thiago Roberto Raddo (University of Malaga, Spain)" },
+                                    { title: "Avaliação Experimental de Estratégias de Eficiência Energética e Predição da Vida Útil Restante de Baterias em Redes LoRa", authors: "Thays da costa (CEFET/RJ), Alexandre Santos (CEFET/RJ), Laura Silva Assis (CEFET/RJ, UNICAMP), Cristiano de Souza de Carvalho (CEFET/RJ), Felipe Rocha Henriques (CEFET/RJ)" }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        time: "10:30 - 11:00",
+                        type: "parallel",
+                        tracks: [
+                           {
+                              type: "social",
+                              title: "Break & Networking",
+                              room: "Área de Convivência",
+                              category: "social"
+
+                           },
+                           {
+                            id: "studentforum-poster4",
+                             type: "social",
+                             title: "Student Forum Poster Session IV",
+                             room: "Networking area",
+                             category: "technical",
+                             details:"Alessandra Vaz dos Anjos Santos	(IME)<br>Antônio Herbert da Silva Francelino (IFCE)<br>Bianca Solleny Souza Silva (UFV)<br>Bruna Henning Pereira (UNIVALI)<br>Deimonril Gomes da Silva (USP)<br>Felipe Calegari (UFSC)<br>Girlana Souza dos Santos (UNICAMP)<br>José Ronaldo Ferreira Braga da Silva Filho (IFCE)<br>Marcela alves rodrigues (UFAM)<br>Micahely Raiany Correia da Silva (UFPE)<br>Samuel Souza da Silva (UFMG)<br>Tálles de Sousa Costa (UFV)<br>Thiago Haas Rausch (UNIVALI)<br>"
+                           }
+                        ]
+                    },
+                    {
+                        time: "11:00 - 12:00",
+                        type: "parallel",
+                        tracks: [
+                            {
+                                id: "ts13",
+                                title: "Technical Session XIII: Test & Verification",
+                                room: "Espaço Cultural Dois de Julho - Auditorium",
+                                category: "technical",
+                                papers: [
+                                    { title: "Design for Test Observability of a Reliable Network-on-Chip", authors: "Thiago Rausch (UNIVALI, University of Montpellier, France), Wesley Grignani (University of Montpellier, France), Douglas Almeida dos Santos (University of Montpellier, France), Luigi Dilillo (University of Montpellier, France), Douglas Melo (UNIVALI)" },
+                                    { title: "Formal Verification of Critical Modules in the PX4 Autopilot using Bounded Model Checking", authors: "Marcela Alves Rodrigues (UFAM), Lucas Carvalho Cordeiro (University of Manchester, UK), José Reginaldo Hughes Carvalho (UFAM)" },
+                                    { title: "IAMARA Sensors DSL: uma Linguagem Orientada por Ontologias para Configuração Semântica de Sistemas Vestíveis em Ambientes Críticos", authors: "Bruno Nunes (UFAM), Raimundo da Silva Barreto (UFAM)" }
+                                ]
+                            },
+                            {
+                                id: "ts14",
+                                title: "Technical Session XIV: Networking & Distributed Coordination",
+                                room: "Room Santo Antonio Além do Carmo",
+                                category: "technical",
+                                papers: [
+                                    { title: "FWB-Cupid: Alocação de Canais em Funil para Convergecast em UWB", authors: "Lucas Emanuel Elias Alves (UFMG), Hélio Neto (UFMG), Luiz Filipe Menezes Vieira (UFMG), Marcos Augusto Menezes Vieira (UFMG)" },
+                                    { title: "Topologia Cluster-Tree com Escalonamento Bottom-Up e Assistência por Relay para Redes Industriais IoT Baseadas no padrão IEEE 802.11ah", authors: "Krisna Calixto (UFPI), Erico Meneses Leão (UFPI), Francisco Vasques (University of Porto, Portugal), Paulo Portugal (University of Porto, Portugal), João Oliveira (University of Porto, Portugal), Carlos Montez (UFSC), Richard Demo Souza (UFSC), Rodrigo Lange (IFRS)" },
+                                    { title: "Avaliação de Regras de Coordenação de Dispositivos IoT Mineradas por Associação com Base em uma Verdade de Referência", authors: "Lesly Delgado Pérez (UFAM), Raimundo da Silva Barreto (UFAM)" }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        time: "12:00 - 13:30",
+                        type: "social",
+                        title: "Lunch Interval",
+                        room: "-",
+                        category: "social"
+                    },
+                    {
+                        time: "13:30 - 15:30",
+                        type: "parallel",
+                        tracks: [
+                            {
+                                id: "ts15",
+                                title: "Technical Session XV: Control & Automation",
+                                room: "Espaço Cultural Dois de Julho - Auditorium",
+                                category: "technical",
+                                papers: [
+                                    { title: "Deadline-Aware Hierarchical NMPC for Position-Dependent Torque-Ripple Compensation in an Exoskeleton Actuator", authors: "Carlos Freitas (UNICAMP), Eric Rohmer (UNICAMP)" },
+                                    { title: "Diffusion-Based Model Predictive Control with Temporal Consistency for Continuous Control", authors: "Eric Antonelo (UFSC)" },
+                                    { title: "Computational Efficiency and Stability Analysis in Numerical Integration Methods for Stiff Second-Order Dynamic Systems", authors: "Michaely Silva (UFPE), Caio de Souza (UFPE, UPE), Israel Duarte (UFPE), Rodolfo José De Paula Wanderley (UFPE), Andson Marreiros Balieiro (UFPE), Augusto Oliveira" },
+                                    { title: "Adaptive Traffic Signal Control with Q-Learning for Emergency Vehicle Prioritization", authors: "Isaque Andrade (IFBA), Crescencio Lima (IFBA), Djan Santos (IFBA)" },
+                                    { title: "Coordinate-Aware Transverse Jacobian Deformation as a Supervisory Signal for Electronic Stability Control", authors: "Josafat Leal Filho (UFSC), Antonio Augusto Frohlich (UFSC)" },
+                                    { title: "An open-source context-aware AT-style command parser for embedded systems", authors: "Andres Sere (UDELAR, Uruguay), Leonardo Steinfeld (UDELAR, Uruguay)" }
+                                ]
+                            },
+                            {
+                                id: "ts16",
+                                title: "Technical Session XVI: Performance Evaluation & Optimization",
+                                room: "Room Santo Antonio Além do Carmo",
+                                category: "technical",
+                                papers: [
+                                    { title: "Comparative Performance Evaluation of Classification Engines for Dark Pattern Detection in E-commerce Web Applications", authors: "João Victor Sampaio da Silva (UFC), Ana Eloise Ferreira Neves (UFC), Thaís Nicolau (UFC)" },
+                                    { title: "Proximal Policy Optimization (PPO)-based Task Offloading in 3D Edge Computing", authors: "Luiz Segundo (UFPE), Renata Kellen Gomes dos Reis (Sidia Instituto de Ciência e Tecnologia), Dalton C. G. Valadares (UFCG), Andson Marreiros Balieiro (UFPE), Tarik Taleb (Rurh University Bochum, Germany)" },
+                                    { title: "Experimental Evaluation of Open-Source and Proprietary HCI Platforms for Artificial Intelligence Workloads", authors: "Rodolfo José De Paula Wanderley (UFPE), Caio de Souza (UFPE), Israel Duarte (UFPE), Michaely Silva (UFPE), Andson Marreiros Balieiro (UFPE), Kelvin Dias (UFPE)" },
+                                    { title: "Experimental Characterization of Virtual Memory Behavior in GEMM Implementations", authors: "Girlana Santos (UNICAMP), Lucas Wanner (UNICAMP), Isaías Felzmann (UNICAMP)" },
+                                    { title: "The Interplay of Load and Data Balancing: An Experimental Analysis Using HDFS and YARN", authors: "Rhauani W. Fazul (UFSC), Odorico M. Mendizabal (UFSC), Patricia Pitthan Barcelos (UFSM)" },
+                                    { title: "Visualization and Performance of RTRBench Robotic Benchmark on Smartphones", authors: "Edward David Moreno (UFS), Álvaro L. S. Peixoto (UFS), Calebe Micael de Oliveira Conceição (UFS)" }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        time: "15:40 - 16:40",
+                        type: "social",
+                        title: "Closing Ceremony and Awards",
+                        room: "Espaço Cultural Dois de Julho - Auditorium",
+                        category: "social"
+                    }
+                ]
+            }
+        };
+
+        // STATE MANAGEMENT
+        let currentDay = 1;
+        let currentCategory = 'all';
+        let currentViewMode = 'timeline';
+        let searchQuery = '';
+        let favorites = JSON.parse(localStorage.getItem('sbesc_favs') || '[]');
+        let showFavsOnly = false;
+
+        // INITIALIZATION
+        document.addEventListener('DOMContentLoaded', () => {
+            render();
+            updateFavBadge();
+            lucide.createIcons();
+        });
+
+        // ACTIONS & FILTERS
+        function switchDay(day) {
+            currentDay = day;
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('tab-active');
+                btn.classList.add('text-slate-500');
+            });
+            const activeBtn = document.getElementById(`tab-day${day}`);
+            activeBtn.classList.add('tab-active');
+            activeBtn.classList.remove('text-slate-500');
+
+            document.getElementById('dayTitle').innerText = programData[day].title;
+            document.getElementById('daySubtitle').innerText = programData[day].subtitle;
+
+            render();
+        }
+
+        function filterCategory(cat) {
+            currentCategory = cat;
+            document.querySelectorAll('.cat-pill').forEach(btn => {
+                btn.className = "cat-pill bg-white text-slate-600 border border-slate-200 text-xs font-medium px-3 py-1.5 rounded-full hover:bg-slate-100 transition-all";
+            });
+            const activePill = document.getElementById(`cat-${cat}`);
+            if(activePill) {
+                activePill.className = "cat-pill bg-blue-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full transition-all";
+            }
+            render();
+        }
+
+        function setViewMode(mode) {
+            currentViewMode = mode;
+            const btnTime = document.getElementById('btn-view-timeline');
+            const btnGrid = document.getElementById('btn-view-grid');
+
+            if(mode === 'timeline') {
+                btnTime.className = "p-1.5 rounded text-blue-600 bg-blue-50 hover:bg-blue-100 transition-all";
+                btnGrid.className = "p-1.5 rounded text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all";
+                document.getElementById('timelineView').classList.remove('hidden');
+                document.getElementById('gridView').classList.add('hidden');
+            } else {
+                btnGrid.className = "p-1.5 rounded text-blue-600 bg-blue-50 hover:bg-blue-100 transition-all";
+                btnTime.className = "p-1.5 rounded text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all";
+                document.getElementById('timelineView').classList.add('hidden');
+                document.getElementById('gridView').classList.remove('hidden');
+            }
+            render();
+        }
+
+        function handleSearch() {
+            searchQuery = document.getElementById('searchInput').value.toLowerCase().trim();
+            render();
+        }
+
+        function toggleFavFilter() {
+            showFavsOnly = !showFavsOnly;
+            const btn = document.getElementById('favToggleBtn');
+            if(showFavsOnly) {
+                btn.classList.add('bg-amber-50', 'border-amber-300', 'text-amber-900');
+            } else {
+                btn.classList.remove('bg-amber-50', 'border-amber-300', 'text-amber-900');
+            }
+            render();
+        }
+
+        function toggleFavorite(itemId, event) {
+            event.stopPropagation();
+            if(favorites.includes(itemId)) {
+                favorites = favorites.filter(id => id !== itemId);
+            } else {
+                favorites.push(itemId);
+            }
+            localStorage.setItem('sbesc_favs', JSON.stringify(favorites));
+            updateFavBadge();
+            render();
+        }
+
+        function updateFavBadge() {
+            document.getElementById('favBadge').innerText = favorites.length;
+        }
+
+        function resetFilters() {
+            searchQuery = '';
+            document.getElementById('searchInput').value = '';
+            currentCategory = 'all';
+            showFavsOnly = false;
+            document.getElementById('favToggleBtn').classList.remove('bg-amber-50', 'border-amber-300', 'text-amber-900');
+            filterCategory('all');
+        }
+
+        // RENDER FUNCTIONS
+        function render() {
+            const data = programData[currentDay].schedule;
+            let visibleCount = 0;
+
+            if(currentViewMode === 'timeline') {
+                visibleCount = renderTimeline(data);
+            } else {
+                visibleCount = renderGrid(data);
+            }
+
+            const emptyState = document.getElementById('emptyState');
+            if(visibleCount === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            lucide.createIcons();
+        }
+
+        function matchesSearchAndCategory(item) {
+            if(currentCategory !== 'all') {
+                if(item.type === 'parallel') {
+                    const hasCat = item.tracks.some(t => t.category === currentCategory);
+                    if(!hasCat) return false;
+                } else if(item.category !== currentCategory) {
+                    return false;
+                }
+            }
+
+            if(showFavsOnly) {
+                if(item.type === 'parallel') {
+                    const hasFav = item.tracks.some(t => favorites.includes(t.id));
+                    if(!hasFav) return false;
+                } else {
+                    const itemId = `${currentDay}-${item.time}-${item.title}`;
+                    if(!favorites.includes(itemId)) return false;
+                }
+            }
+
+            if(searchQuery !== '') {
+                const searchStr = JSON.stringify(item).toLowerCase();
+                return searchStr.includes(searchQuery);
+            }
+
+            return true;
+        }
+
+        function renderTimeline(data) {
+            const container = document.getElementById('timelineView');
+            container.innerHTML = '';
+            let count = 0;
+
+            data.forEach(item => {
+                if(!matchesSearchAndCategory(item)) return;
+                count++;
+
+                const row = document.createElement('div');
+                row.className = `session-row session-${item.category || item.type} flex flex-col md:flex-row gap-4 p-5 rounded-xl border bg-white transition-all shadow-sm`;
+
+                const itemId = `${currentDay}-${item.time}-${item.title}`;
+                const isFav = favorites.includes(itemId);
+
+                if(item.type === 'parallel') {
+                    row.innerHTML = `
+                        <div class="md:w-32 shrink-0 font-semibold text-slate-600 text-sm flex md:flex-col justify-between items-start">
+                            <span class="bg-slate-100 text-slate-800 px-2.5 py-1 rounded text-xs font-mono font-bold">${item.time}</span>
+                            <span class="text-xs text-slate-400 mt-1">Parallel Activities (${item.tracks.length} rooms)</span>
+                        </div>
+                        <div class="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            ${item.tracks.map(track => {
+                                const trkFav = favorites.includes(track.id);
+                                return `
+                                    <div onclick="openModal('${track.id}')" class="session-card session-${track.category || 'technical'} p-4 rounded-lg border transition-all cursor-pointer relative group">
+                                        <div class="flex justify-between items-start">
+                                            <span class="text-xs font-bold px-2 py-0.5 rounded badge-${track.category || 'technical'} session-badge">${track.room}</span>
+                                            <button onclick="toggleFavorite('${track.id}', event)" class="text-slate-300 hover:text-amber-500 transition-all">
+                                                <i data-lucide="star" class="w-4 h-4 ${trkFav ? 'text-amber-500 fill-amber-500' : ''}"></i>
+                                            </button>
+                                        </div>
+                                        <h4 class="text-sm font-bold text-slate-900 mt-2 group-hover:text-blue-600 transition-colors">${track.title}</h4>
+                                        ${track.subtitle ? `<p class="text-xs text-slate-500 mt-1 line-clamp-2">${track.subtitle}</p>` : ''}
+                                        <p class="text-xs text-blue-600 font-medium mt-3 flex items-center">
+                                            <span>${track.papers ? `See ${track.papers.length} accepeted papers` : 'Details'}</span>
+                                            <i data-lucide="chevron-right" class="w-3.5 h-3.5 ml-1"></i>
+                                        </p>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    `;
+                } else {
+                    const isKeynote = item.type === 'keynote';
+                    const isSchool = item.type === 'school';
+                    const isInteractive = isKeynote || isSchool;
+
+                    row.innerHTML = `
+                        <div class="md:w-32 shrink-0 font-semibold text-slate-600 text-sm flex md:flex-col justify-between items-start">
+                            <span class="bg-slate-100 text-slate-800 px-2.5 py-1 rounded text-xs font-mono font-bold">${item.time}</span>
+                            <span class="text-xs text-slate-400 mt-1">${item.room}</span>
+                        </div>
+                        <div class="flex-1 flex justify-between items-start">
+                            <div class="${isInteractive ? 'cursor-pointer group' : ''}" ${isInteractive ? `onclick="openModal('${itemId}')"` : ''}>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-bold px-2 py-0.5 rounded ${
+                                        isKeynote ? 'badge-keynote' : 
+                                        isSchool ? 'badge-school' : 'badge-social'
+                                    } session-badge">
+                                        ${isKeynote ? 'Keynote' : isSchool ? 'Embedded Systems School' : 'General'}
+                                    </span>
+                                </div>
+                                <h3 class="text-base font-bold text-slate-900 mt-2 group-hover:text-blue-600 transition-colors">${item.title}</h3>
+                                ${item.speaker ? `<p class="text-sm font-medium text-slate-700 mt-1"><i data-lucide="user" class="w-3.5 h-3.5 inline mr-1 text-slate-400"></i>${item.speaker} <span class="text-xs text-slate-500 font-normal">(${item.institution})</span></p>` : ''}
+                                ${item.subtitle ? `<p class="text-xs text-slate-500 mt-1">${item.subtitle}</p>` : ''}
+                                ${isInteractive ? `<p class="text-xs text-blue-600 font-medium mt-2 flex items-center"><span>${isSchool ? 'Details' : 'Bio and abstract'}</span><i data-lucide="chevron-right" class="w-3.5 h-3.5 ml-1"></i></p>` : ''}
+                            </div>
+                            <button onclick="toggleFavorite('${itemId}', event)" class="text-slate-300 hover:text-amber-500 transition-all p-1">
+                                <i data-lucide="star" class="w-5 h-5 ${isFav ? 'text-amber-500 fill-amber-500' : ''}"></i>
+                            </button>
+                        </div>
+                    `;
+                }
+
+                container.appendChild(row);
+            });
+
+            return count;
+        }
+
+        function renderGrid(data) {
+            const container = document.getElementById('gridView');
+            let count = 0;
+
+            let html = `
+                <table class="w-full text-left text-xs text-slate-700">
+                    <thead class="bg-slate-100 text-slate-800 uppercase font-bold border-b border-slate-200">
+                        <tr>
+                            <th class="p-3.5 w-32">Horário</th>
+                            <th class="p-3.5">Auditorium / Geral</th>
+                            <th class="p-3.5">Room Santo Antonio Além do Carmo</th>
+                            <th class="p-3.5">Room Castro Alves / Outros</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 bg-white">
+            `;
+
+            data.forEach(item => {
+                if(!matchesSearchAndCategory(item)) return;
+                count++;
+
+                html += `<tr class="schedule-grid-row">`;
+                html += `<td class="p-3 font-mono font-bold text-slate-600 bg-slate-50/50">${item.time}</td>`;
+
+                if(item.type === 'parallel') {
+                    const aud = item.tracks.find(t => t.room === 'Auditorium');
+                    const rmA = item.tracks.find(t => t.room === 'Room Santo Antonio Além do Carmo');
+                    const rmB = item.tracks.find(t => t.room === 'Room Castro Alves' || t.room === 'Patio');
+
+                    html += `<td class="p-3 grid-session-cell grid-technical cursor-pointer" onclick="${aud ? `openModal('${aud.id}')` : ''}">${aud ? `<strong class="text-slate-900 block">${aud.title}</strong><span class="text-blue-600 text-[11px]">Ver Detalhes</span>` : '-'}</td>`;
+                    html += `<td class="p-3 grid-session-cell grid-technical cursor-pointer" onclick="${rmA ? `openModal('${rmA.id}')` : ''}">${rmA ? `<strong class="text-slate-900 block">${rmA.title}</strong><span class="text-blue-600 text-[11px]">Ver Detalhes</span>` : '-'}</td>`;
+                    html += `<td class="p-3 grid-session-cell grid-technical cursor-pointer" onclick="${rmB ? `openModal('${rmB.id}')` : ''}">${rmB ? `<strong class="text-slate-900 block">${rmB.title}</strong><span class="text-blue-600 text-[11px]">Ver Detalhes</span>` : '-'}</td>`;
+                } else {
+                    const isClickable = item.type === 'keynote' || item.type === 'school';
+                    const itemId = `${currentDay}-${item.time}-${item.title}`;
+                    html += `<td colspan="3" class="p-3 font-medium ${isClickable ? 'hover:bg-blue-50/50 cursor-pointer' : 'bg-slate-50/30'}" ${isClickable ? `onclick="openModal('${itemId}')"` : ''}>
+                        <span class="font-bold text-slate-900">${item.title}</span> 
+                        ${item.speaker ? `<span class="text-slate-500">— ${item.speaker} (${item.institution})</span>` : ''}
+                        ${isClickable ? `<span class="text-blue-600 text-[11px] block mt-0.5">Clique para ver mais</span>` : ''}
+                    </td>`;
+                }
+
+                html += `</tr>`;
+            });
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+            return count;
+        }
+
+        // MODAL HANDLERS
+        function openModal(id) {
+            let foundTrack = null;
+            let foundItem = null;
+
+            // Search in schedule or tracks
+            Object.values(programData).forEach(day => {
+                day.schedule.forEach(item => {
+                    if(item.type === 'parallel') {
+                        const trk = item.tracks.find(t => t.id === id);
+                        if(trk) {
+                            foundTrack = trk;
+                            foundItem = item;
+                        }
+                    } else {
+                        const itemId = `${currentDay}-${item.time}-${item.title}`;
+                        if(itemId === id) {
+                            foundTrack = item;
+                        }
+                    }
+                });
+            });
+
+            if(!foundTrack) return;
+
+            const modal = document.getElementById('modalOverlay');
+            document.getElementById('modalTitle').innerText = foundTrack.title;
+            document.getElementById('modalTime').innerText = foundItem ? foundItem.time : (foundTrack.time || '--:--');
+            document.getElementById('modalRoom').innerText = foundTrack.room || 'Auditório Principal';
+
+            const modalBody = document.getElementById('modalBody');
+            
+            if(foundTrack.papers) {
+                document.getElementById('modalTypeBadge').innerText = "Technical Session • Accepted Papers";
+                let html = `<p class="text-xs text-slate-500 mb-4">See the complete list of authors and the accepted papers for this session:</p>`;
+                html += `<div class="space-y-4">`;
+                foundTrack.papers.forEach((paper, idx) => {
+                    html += `
+                        <div class="p-3.5 rounded-lg border border-slate-200 bg-slate-50">
+                            <span class="text-[10px] font-bold text-blue-600 uppercase tracking-wider">PAPER #${idx + 1}</span>
+                            <h4 class="text-sm font-bold text-slate-900 mt-1">${paper.title}</h4>
+                            <p class="text-xs text-slate-600 mt-1 flex items-center gap-1"><i data-lucide="users" class="w-3.5 h-3.5 text-slate-400"></i> ${paper.authors}</p>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+                modalBody.innerHTML = html;
+            } else if(foundTrack.category === 'school') {
+                document.getElementById('modalTypeBadge').innerText = "Embedded Systems School (Tutorial)";
+                modalBody.innerHTML = `
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-3 p-3.5 bg-emerald-50 rounded-lg border border-emerald-100">
+                            <div class="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-base">
+                                <i data-lucide="book-open" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-900">${foundTrack.speaker || 'Lecturer'}</h4>
+                                <p class="text-xs text-slate-500">${foundTrack.institution || 'Embedded Systems School'}</p>
+                            </div>
+                        </div>
+                        <div>
+                            <h5 class="text-xs font-bold text-slate-400 tracking-wider">Bio</h5>
+                            <p class="text-xs text-slate-700 mt-1 leading-relaxed">${foundTrack.bio}</p>
+                        </div>
+
+                        <div>
+                            <h5 class="text-xs font-bold  text-slate-400 tracking-wider">Detail</h5>
+                            <p class="text-xs text-slate-700 mt-1 leading-relaxed">${foundTrack.abstract || foundTrack.details }</p>
+                        </div>
+                        ${foundTrack.prerequisites ? `
+                            <div class="pt-2 border-t border-slate-100">
+                                <h5 class="text-xs font-bold uppercase text-slate-400 tracking-wider">Pré-requisitos Recomendados</h5>
+                                <p class="text-xs text-slate-700 mt-1">${foundTrack.prerequisites}</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            } else if(foundTrack.category === 'keynote') {
+                document.getElementById('modalTypeBadge').innerText = "Keynote Speaker";
+                modalBody.innerHTML = `
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg border border-purple-100">
+                            <div class="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold text-base">
+                                ${foundTrack.speaker ? foundTrack.speaker.charAt(0) : 'K'}
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-900">${foundTrack.speaker}</h4>
+                                <p class="text-xs text-slate-500">${foundTrack.institution}</p>
+                            </div>
+                        </div>
+                        <div>
+                            <h5 class="text-xs font-bold uppercase text-slate-400 tracking-wider">Bio</h5>
+                            <p class="text-xs text-slate-700 mt-1 leading-relaxed">${foundTrack.bio || 'Unavailable Bio info.'}</p>
+                        </div>
+                        <div class="pt-2 border-t border-slate-100">
+                            <h5 class="text-xs font-bold uppercase text-slate-400 tracking-wider">Abstract</h5>
+                            <p class="text-xs text-slate-700 mt-1 leading-relaxed">${foundTrack.abstract || 'Unavailable abstract info.'}</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                document.getElementById('modalTypeBadge').innerText = "SCHEDULED ACTIVITY";
+                modalBody.innerHTML = `
+                    <p class="text-sm text-slate-700">${foundTrack.subtitle || foundTrack.details || 'Sem detalhes adicionais cadastrados.'}</p>
+                `;
+            }
+
+            modal.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeModal() {
+            document.getElementById('modalOverlay').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
